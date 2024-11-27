@@ -14,7 +14,7 @@ router.use(asyncHandler(ensureRole(ACCOUNT_TYPE.ADMIN)));
 
 router.get(
     "/",
-    asyncHandler(ensurePermissionsMiddleware.ensurePermissions("admin-management")),
+    asyncHandler(ensurePermissionsMiddleware.ensurePermissions("list-admin")),
     asyncHandler(dashboardController.getInfoDashboard),
 );
 

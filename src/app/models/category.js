@@ -9,10 +9,6 @@ export const Category = createModel("Category", "categories", {
         type: String,
         default: null,
     },
-    position: {
-        type: Number,
-        default: null,
-    },
     deleted: {
         type: Boolean,
         default: false,

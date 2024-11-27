@@ -137,6 +137,134 @@ const permission_groups = [
         ],
     },
     {
+        name: "Quản lý người dùng",
+        code: "user-management",
+        description: "",
+        actor: "user",
+        types: {
+            [list.code]: {
+                name: "Truy cập quản lý người dùng",
+                description: "Xem quản lý người dùng",
+            },
+        },
+        children: [
+            {
+                name: "Giáo viên",
+                code: "teacher",
+                actor: "management-teacher",
+                types: {
+                    [list.code]: {
+                        name: "Xem danh sách giáo viên",
+                        description: "Xem danh sách giáo viên",
+                    },
+                    [add.code]: {
+                        name: "Thêm mới giáo viên",
+                        description: "Thêm mới giáo viên",
+                    },
+                    [edit.code]: {
+                        name: "Chỉnh sửa thông tin giáo viên",
+                        description: "Chỉnh sửa thông tin giáo viên",
+                    },
+                    [remove.code]: {
+                        name: "Xóa giáo viên",
+                        description: "Xóa giáo viên",
+                    },
+                },
+                children: [
+                    {
+                        name: "Đổi mật khẩu giáo viên",
+                        code: "reset-password-teacher",
+                        description: "Thay đổi mật khẩu giáo viên",
+                        children: [],
+                        actor: "reset-password-teacher",
+                        types: {
+                            [edit.code]: {
+                                name: "Đổi mật khẩu giáo viên",
+                                description: "Thay đổi mật khẩu giáo viên",
+                            },
+                        },
+                    },
+                ],
+            },
+            {
+                name: "Sinh viên",
+                code: "student",
+                actor: "management-student",
+                types: {
+                    [list.code]: {
+                        name: "Xem danh sách sinh viên",
+                        description: "Xem danh sách sinh viên",
+                    },
+                    [add.code]: {
+                        name: "Thêm mới sinh viên",
+                        description: "Thêm mới sinh viên",
+                    },
+                    [edit.code]: {
+                        name: "Chỉnh sửa thông tin sinh viên",
+                        description: "Chỉnh sửa thông tin sinh viên",
+                    },
+                    [remove.code]: {
+                        name: "Xóa sinh viên",
+                        description: "Xóa sinh viên",
+                    },
+                },
+                children: [
+                    {
+                        name: "Đổi mật khẩu sinh viên",
+                        code: "reset-password-student",
+                        description: "Thay đổi mật khẩu sinh viên",
+                        children: [],
+                        actor: "reset-password-student",
+                        types: {
+                            [edit.code]: {
+                                name: "Đổi mật khẩu sinh viên",
+                                description: "Thay đổi mật khẩu sinh viên",
+                            },
+                        },
+                    },
+                ],
+            },
+            {
+                name: "Người dùng khác",
+                code: "other",
+                actor: "management-other",
+                types: {
+                    [list.code]: {
+                        name: "Xem danh sách người dùng khác",
+                        description: "Xem danh sách người dùng khác",
+                    },
+                    [add.code]: {
+                        name: "Thêm mới người dùng khác",
+                        description: "Thêm mới người dùng khác",
+                    },
+                    [edit.code]: {
+                        name: "Chỉnh sửa thông tin người dùng khác",
+                        description: "Chỉnh sửa thông tin người dùng khác",
+                    },
+                    [remove.code]: {
+                        name: "Xóa người dùng khác",
+                        description: "Xóa người dùng khác",
+                    },
+                },
+                children: [
+                    {
+                        name: "Đổi mật khẩu người dùng khác",
+                        code: "reset-password-other",
+                        description: "Thay đổi mật khẩu người dùng khác",
+                        children: [],
+                        actor: "reset-password-other",
+                        types: {
+                            [edit.code]: {
+                                name: "Đổi mật khẩu người dùng khác",
+                                description: "Thay đổi mật khẩu người dùng khác",
+                            },
+                        },
+                    },
+                ],
+            },
+        ],
+    },
+    {
         name: "Quản lý vai trò",
         code: "role-management",
         actor: "role",

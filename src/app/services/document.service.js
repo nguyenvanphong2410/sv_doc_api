@@ -114,6 +114,14 @@ export async function getListDocumentByCategoryId(categoryId, {q, page, per_page
                     as: "document_categories",
                 },
             },
+            {
+                $lookup: {
+                    from: "users", // truy vấn đến collection "users"
+                    localField: "creator_id", // trường creator_id trong Document
+                    foreignField: "_id", // trường _id trong User
+                    as: "creator_info", // kết quả sẽ nằm trong trường creator_info
+                },
+            },
         ],
     });
 
@@ -135,7 +143,17 @@ export async function getListDocumentByCategoryId(categoryId, {q, page, per_page
         document.image_featured =
             _.isNumber(document.image_featured) && document.images_src[document.image_featured];
         document.categories = document.document_categories.map((pc) => categoryMap[pc.category_id] || {});
-        const {document_categories, ...result} = document;
+
+        // Lấy thông tin người tạo
+        const creator = document.creator_info?.[0] || {}; // Lấy thông tin người tạo từ creator_info
+        document.creator = {
+            _id: creator._id,
+            name: creator.name,
+            avatar: creator.avatar ? LINK_STATIC_URL + creator.avatar : null, // Giả sử user có trường 'avatar' trong schema
+            email: creator.email,
+        };
+
+        const {document_categories, creator_info, ...result} = document;
         result.category_id = document_categories.map((item) => item.category_id);
         return result;
     });
@@ -326,7 +344,11 @@ export async function getListDocumentForUser({q, page, per_page, field, sort_ord
     q = q ? {$regex: q, $options: "i"} : null;
     const query = Document.aggregate();
     const filter = {
-        ...(q && {$or: [{name: q}, {code: q}]}),
+        ...(q && {$or: [
+            {name: q},
+            {author: q},
+            {description: q},
+        ]}),
         doc_check: STATUS_DOC_CHECK.CHECKED,
         status: STATUS_ACTIVE.UNLOCK,
         deleted: false,
