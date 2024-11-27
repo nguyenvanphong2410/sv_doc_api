@@ -1,8 +1,8 @@
 import {Router} from "express";
 import {asyncHandler} from "@/utils/handlers";
 import {
-    verifyToken, 
-    validate, 
+    verifyToken,
+    validate,
     upload
 } from "@/app/middleware/common";
 
@@ -26,7 +26,6 @@ router.get(
     asyncHandler(documentMiddleware.checkDocument),
     asyncHandler(documentController.getDetailDocumentForUser),
 );
-
 
 router.get(
     "/:id/view-quantity",

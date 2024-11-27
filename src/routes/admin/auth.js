@@ -14,7 +14,11 @@ router.post(
     asyncHandler(authController.register),
 );
 
-router.post("/login", asyncHandler(validate(authRequest.login)), asyncHandler(authController.login));
+router.post(
+    "/login",
+    asyncHandler(validate(authRequest.login)),
+    asyncHandler(authController.login)
+);
 
 router.post("/logout", asyncHandler(verifyToken), asyncHandler(authController.logout));
 
