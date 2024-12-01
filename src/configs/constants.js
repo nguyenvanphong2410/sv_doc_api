@@ -138,3 +138,8 @@ export const DOCUMENT_STATUS = {
     LOCK: "LOCK",
     UNLOCK: "UNLOCK",
 };
+
+export const TYPE_SAVE = {
+    FILE: "FILE",
+    CHAPTERS: "CHAPTERS",
+};

@@ -1,5 +1,5 @@
 import _ from "lodash";
-import {LINK_STATIC_URL, STATUS_ACTIVE, STATUS_DOC_CHECK} from "@/configs";
+import {LINK_STATIC_URL, STATUS_ACTIVE, STATUS_DOC_CHECK, TYPE_SAVE} from "@/configs";
 import {FileUpload} from "@/utils/types";
 import {ObjectId, Document, User} from "../models";
 import {Category} from "../models/category";
@@ -59,6 +59,12 @@ export async function getListDocument({q, page, per_page, field, sort_order}) {
             _.isNumber(document.image_featured) && document.images_src[document.image_featured];
         document.categories = document.document_categories.map((pc) => categoryMap[pc.category_id] || {});
         document.file_record = LINK_STATIC_URL + document.file_record;
+
+        // Xử lý chapters
+        document.chapters = document.chapters.map((chapter) => ({
+            ...chapter,
+            file_chapter: LINK_STATIC_URL + chapter.file_chapter,
+        }));
 
         // Lấy thông tin người tạo
         const creator = document.creator_info?.[0] || {}; // Lấy thông tin người tạo từ creator_info
@@ -174,6 +180,13 @@ export async function getDetailDocument(documentId) {
     document.file_record = LINK_STATIC_URL + document.file_record;
     document.images = document.images.map((img) => LINK_STATIC_URL + img);
 
+    if (document?.chapters?.length > 0) {
+        document.chapters = document.chapters.map((chapter) => ({
+            ...chapter,
+            file_chapter: LINK_STATIC_URL + chapter.file_chapter,
+        }));
+    }
+
     return {
         ...document.toObject(),
         creator: crt._id
@@ -187,8 +200,9 @@ export async function getDetailDocument(documentId) {
     };
 }
 
+
 export async function createDocument(
-    {images, image_featured, category_id, file_record, ...data},
+    {images, image_featured, category_id, file_record, type_save, chapters, ...data},
     creator_id,
 ) {
     const lastDocument = await Document.findOne().sort({code: -1});
@@ -203,17 +217,37 @@ export async function createDocument(
 
     images = await Promise.all(images.map((img) => img.save("images/documents")));
 
-    if (file_record) {
-        file_record = await file_record.save("file_record");
+    if (type_save === TYPE_SAVE.FILE && file_record) {
+        if (file_record) {
+            file_record = await file_record.save("file_record");
+        }
+    }
+
+    let processedChapters = [];
+    if (type_save === TYPE_SAVE.CHAPTERS && chapters.length > 0) {
+        // Duyệt qua từng chương và xử lý file_chapter
+        processedChapters = await Promise.all(
+            chapters.map(async (chapter) => {
+                const savedFile = await chapter.file_chapter.save("file_record");
+
+                return {
+                    name: chapter.name,
+                    name_file_chapter: chapter.name_file_chapter,
+                    file_chapter: savedFile,
+                };
+            }),
+        );
     }
 
     const document = new Document({
         ...data,
+        type_save,
         code: newCode,
         images,
         image_featured: images.length > 0 && _.isNumber(image_featured) ? image_featured : null,
-        file_record,
+        file_record: type_save === TYPE_SAVE.FILE ? file_record : null,
         creator_id: creator_id._id,
+        chapters: type_save === TYPE_SAVE.CHAPTERS ? processedChapters : [],
     });
 
     const newDocument = await document.save();
@@ -230,7 +264,7 @@ export async function createDocument(
         );
     }
 
-    return document;
+    return newDocument;
 }
 
 export async function updateDocument(
@@ -248,20 +282,74 @@ export async function updateDocument(
         name_file,
         status,
         doc_check,
+        type_save,
+        chapters,
     },
-    creator,
+    updatetor,
 ) {
-    console.log("🌈 ~ creator:", creator);
+    console.log("🌈 ~ chapters111:", chapters);
+
+    // Ảnh
     const keepImages = document.images.filter((img) => images.includes(img));
     const removeImages = document.images.filter((img) => !images.includes(img));
     images = images.filter((img) => img instanceof FileUpload).map((img) => img.save("images/documents"));
-    if (file_record && typeof file_record !== "string") {
-        document.file_record = await file_record.save("file_record");
-    }
     const newImages = await Promise.all(images);
-
     for (const img of removeImages) {
         FileUpload.remove(img);
+    }
+
+    // FILE
+    if (type_save === TYPE_SAVE.FILE && file_record) {
+        if (file_record && typeof file_record !== "string") {
+            document.file_record = await file_record.save("file_record");
+        }
+    }
+
+    if (type_save === TYPE_SAVE.CHAPTERS && chapters?.length > 0) {
+        console.log("🌈 ~ chapters22222:", chapters);
+        // Xử lý các chapter
+        const processedChapters = await Promise.all(
+            chapters.map(async (chapter) => {
+                // Tìm chương cần cập nhật trong tài liệu
+                const existingChapter = document.chapters.find((ch) => ch._id.toString() === chapter._id);
+
+                if (existingChapter) {
+                    // Cập nhật name và name_file_chapter
+                    existingChapter.name = chapter.name;
+                    existingChapter.name_file_chapter = chapter.name_file_chapter;
+
+                    // Kiểm tra và xử lý file_chapter
+                    if (chapter.file_chapter && typeof chapter.file_chapter !== "string") {
+                        existingChapter.file_chapter = await chapter.file_chapter.save("file_record");
+                    }
+                    return existingChapter;
+                }
+
+                // Nếu không tìm thấy chương, tạo mới
+                if (!existingChapter) {
+                    const newChapter = {
+                        _id: new mongoose.Types.ObjectId(), // Tạo một ObjectId mới
+                        name: chapter.name,
+                        name_file_chapter: chapter.name_file_chapter,
+                    };
+
+                    if (chapter.file_chapter && typeof chapter.file_chapter !== "string") {
+                        newChapter.file_chapter = await chapter.file_chapter.save("file_record");
+                    }
+
+                    // Thêm chương mới vào danh sách chapters của tài liệu
+                    document.chapters.push(newChapter);
+
+                    return newChapter; // Trả về chương mới để thêm vào danh sách processedChapters
+                }
+            }),
+        );
+
+        // Gán lại danh sách chapters đã xử lý
+        document.chapters = processedChapters.filter(Boolean); // Loại bỏ phần tử null nếu có
+    }
+    if (type_save === TYPE_SAVE.CHAPTERS && !chapters) {
+        document.chapters = [];
     }
 
     document.name = name;
@@ -273,6 +361,7 @@ export async function updateDocument(
     document.publisher = publisher;
     document.publication_time = publication_time;
     document.name_file = name_file;
+    document.type_save = type_save;
 
     if (!category_id || _.isEmpty(category_id)) {
         await DocumentCategory.deleteMany({
@@ -304,7 +393,7 @@ export async function updateDocument(
     }
 
     const newDocument = await document.save();
-    console.log("🌈 ~ newDocument:", newDocument);
+    // console.log("🌈 ~ newDocument:", newDocument);
 
     return document;
 }
@@ -344,11 +433,7 @@ export async function getListDocumentForUser({q, page, per_page, field, sort_ord
     q = q ? {$regex: q, $options: "i"} : null;
     const query = Document.aggregate();
     const filter = {
-        ...(q && {$or: [
-            {name: q},
-            {author: q},
-            {description: q},
-        ]}),
+        ...(q && {$or: [{name: q}, {code: q}, {author: q}, {description: q}]}),
         doc_check: STATUS_DOC_CHECK.CHECKED,
         status: STATUS_ACTIVE.UNLOCK,
         deleted: false,
@@ -612,6 +697,12 @@ export async function getDetailDocumentForUser(documentId) {
     // Thêm đường dẫn tĩnh cho file_record và images
     document.file_record = LINK_STATIC_URL + document.file_record;
     document.images = document.images.map((img) => LINK_STATIC_URL + img);
+    if (document?.chapters?.length > 0) {
+        document.chapters = document.chapters.map((chapter) => ({
+            ...chapter,
+            file_chapter: LINK_STATIC_URL + chapter.file_chapter,
+        }));
+    }
 
     // Trả về kết quả với thông tin tài liệu, người tạo, danh mục và bình luận
     return {
@@ -633,7 +724,7 @@ export async function getDetailDocumentForUser(documentId) {
 }
 
 export async function createDocumentForUser(
-    {images, image_featured, category_id, file_record, ...data},
+    {images, image_featured, category_id, file_record, type_save, chapters, ...data},
     creator_id,
 ) {
     const lastDocument = await Document.findOne().sort({code: -1});
@@ -647,17 +738,40 @@ export async function createDocumentForUser(
     }
 
     images = await Promise.all(images.map((img) => img.save("images/documents")));
-    if (file_record) {
-        file_record = await file_record.save("file_record");
+
+    if (type_save === TYPE_SAVE.FILE && file_record) {
+        if (file_record) {
+            file_record = await file_record.save("file_record");
+        }
     }
+
+    let processedChapters = [];
+    if (type_save === TYPE_SAVE.CHAPTERS && chapters.length > 0) {
+        // Duyệt qua từng chương và xử lý file_chapter
+        processedChapters = await Promise.all(
+            chapters.map(async (chapter) => {
+                const savedFile = await chapter.file_chapter.save("file_record");
+
+                return {
+                    name: chapter.name,
+                    name_file_chapter: chapter.name_file_chapter,
+                    file_chapter: savedFile,
+                };
+            }),
+        );
+    }
+
     const document = new Document({
         ...data,
+        type_save,
         code: newCode,
         images,
         image_featured: images.length > 0 && _.isNumber(image_featured) ? image_featured : null,
-        file_record,
+        file_record: type_save === TYPE_SAVE.FILE ? file_record : null,
         creator_id: creator_id._id,
+        chapters: type_save === TYPE_SAVE.CHAPTERS ? processedChapters : [],
     });
+
     const newDocument = await document.save();
 
     if (_.isArray(category_id)) {
@@ -672,7 +786,7 @@ export async function createDocumentForUser(
         );
     }
 
-    return document;
+    return newDocument;
 }
 
 export async function getListMyDocPending(userId, {q, page, per_page, field, sort_order}) {

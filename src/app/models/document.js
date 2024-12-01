@@ -1,4 +1,4 @@
-import { STATUS_ACTIVE, STATUS_DOC_CHECK } from "@/configs";
+import {STATUS_ACTIVE, STATUS_DOC_CHECK} from "@/configs";
 import {createModel} from "./base";
 
 export const Document = createModel("Document", "documents", {
@@ -37,11 +37,11 @@ export const Document = createModel("Document", "documents", {
     },
     name_file: {
         type: String,
-        required: true,
+        // required: true,
     },
     file_record: {
         type: String,
-        required: true,
+        default: null,
     },
     creator_id: {
         type: Object,
@@ -54,7 +54,7 @@ export const Document = createModel("Document", "documents", {
     },
     view_quantity: {
         type: Number,
-        default: 0
+        default: 0,
     },
     doc_check: {
         type: String,
@@ -63,6 +63,30 @@ export const Document = createModel("Document", "documents", {
     },
     deleted: {
         type: Boolean,
-        default: false
+        default: false,
+    },
+    chapters: {
+        type: [
+            {
+                name: {
+                    type: String,
+                    // required: true,
+                },
+                name_file_chapter: {
+                    type: String,
+                    // required: true,
+                },
+                file_chapter: {
+                    type: String,
+                    // required: true,
+                },
+            },
+        ],
+        default: [],
+    },
+    type_save: {
+        type: String,
+        require: true,
+        note: "Loại upload",
     },
 });
