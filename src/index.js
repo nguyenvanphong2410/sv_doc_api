@@ -6,7 +6,6 @@ import {
     errorHandler,
     httpRequestHandler,
     notFoundHandler,
-    rateLimitHandler,
 } from "./utils/handlers";
 import route from "./routes";
 
@@ -21,7 +20,6 @@ export function createApp() {
     if (APP_DEBUG) {
         app.use(httpRequestHandler);
     }
-    // app.use(rateLimitHandler);
     app.use("/static", express.static(PUBLIC_DIR));
     app.use(helmet());
     app.use(express.json());

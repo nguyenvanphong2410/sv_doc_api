@@ -1,5 +1,5 @@
 import Joi from "joi";
-import {MAX_SIZE_NAME, MAX_STRING_SIZE, DOCUMENT_STATUS, STATUS_DOC_CHECK} from "@/configs";
+import {MAX_SIZE_NAME, MAX_STRING_SIZE, DOCUMENT_STATUS, STATUS_DOC_CHECK, TYPE_SAVE} from "@/configs";
 import {AsyncValidate, FileUpload} from "@/utils/types";
 import {Document} from "../models";
 import {tryValidateOrDefault} from "@/utils/helpers";
@@ -10,15 +10,12 @@ export const getListDocumentRequest = Joi.object({
     q: tryValidateOrDefault(Joi.string().trim(), ""),
     page: tryValidateOrDefault(Joi.number().integer().min(1), 1),
     per_page: tryValidateOrDefault(Joi.number().integer().min(1).max(100), 20),
-    field: tryValidateOrDefault(
-        Joi.valid("created_at", "name", "quantity", "sale_price", "wholesale_price"),
-        "created_at",
-    ),
+    field: tryValidateOrDefault(Joi.valid("created_at", "name"), "created_at"),
     sort_order: tryValidateOrDefault(Joi.valid("asc", "desc"), "desc"),
 }).unknown(true);
 
 export const getListDocumentByCategoryIdRequest = Joi.object({
-    idsCategory: Joi.any().label("Các danh mục")
+    idsCategory: Joi.any().label("Các danh mục"),
 }).unknown(true);
 
 export const createDocumentRequest = Joi.object({
@@ -93,14 +90,19 @@ export const createDocumentRequest = Joi.object({
                         return value;
                     }),
             )
-            .label("Danh mục"),
+            .label("Thể loại"),
     ),
     description: Joi.string().allow(null, "").label("Mô tả"),
-    file_record: Joi.any().required().label("File tài liệu"),
+    file_record: Joi.any().label("File tài liệu"),
     publisher: Joi.string().trim().max(MAX_STRING_SIZE).required().label("Nhà xuất bản"),
     author: Joi.string().trim().max(MAX_STRING_SIZE).required().label("Tác giả"),
     publication_time: Joi.any().allow(null, "").label("Thời gian sáng tác"),
     name_file: Joi.string().trim().label("Tên file"),
+    chapters: Joi.any().label("Danh sách chương"),
+    type_save: Joi.string()
+        .required()
+        .valid(...Object.values(TYPE_SAVE))
+        .label("Trạng thái lưu trữ"),
 });
 
 export const updateDocumentRequest = Joi.object({
@@ -171,7 +173,7 @@ export const updateDocumentRequest = Joi.object({
             .label("Danh mục"),
     ),
     description: Joi.string().allow(null, "").label("Mô tả"),
-    file_record: Joi.any().required().label("File tài liệu"),
+    file_record: Joi.any().label("File tài liệu"),
     publisher: Joi.string().trim().max(MAX_STRING_SIZE).required().label("Nhà xuất bản"),
     author: Joi.string().trim().max(MAX_STRING_SIZE).required().label("Tác giả"),
     publication_time: Joi.any().allow(null, "").label("Thời gian sáng tác"),
@@ -184,6 +186,11 @@ export const updateDocumentRequest = Joi.object({
         .valid(...Object.values(STATUS_DOC_CHECK))
         .label("Trạng thái")
         .messages({"any.only": "Trạng thái không hợp lệ."}),
+    type_save: Joi.string()
+        .required()
+        .valid(...Object.values(TYPE_SAVE))
+        .label("Trạng thái lưu trữ"),
+    chapters: Joi.any().label("Danh sách chương"),
 });
 
 export const changeStatusDocumentRequest = Joi.object({

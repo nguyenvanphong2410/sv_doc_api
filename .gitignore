@@ -14,7 +14,6 @@ build
 # misc
 .env
 public/uploads/*
-public/booking-logs/*
 
 src/storage/*
 !src/storage/cache
